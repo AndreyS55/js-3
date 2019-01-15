@@ -1,111 +1,102 @@
-(function todo() {
-    var form = document.getElementById('todo-form');
+window.onload = function() {
     var input = document.getElementById('todo-input');
+    var add = document.getElementById('todo-add');
     var list = document.getElementById('todo-output');
+    var calendar =  datepicker('#todo-datepicker', {
+        formatter: (input, date) => {
+            input.value = date.toLocaleDateString();
+        },
+        position: 'bl',
+        overlayPlaceholder: 'Enter a year...',
+        onSelect: function(instance) {
+            calendar.value = instance.dateSelected;
+        },
+    });
 
-    var store = (function () {
-        var todoList = [];
-        var id = 1;
+    var todo = (function() {
+        var _todoList = [];
+        var _todoId = 1;
 
-        var addTodo = function (todo) {
-            todoList.push({id: id, todo: todo, checked: false});
-            id++;
-            console.log(todoList);
-        };
+        function addTask() {
+            if(input.value !== '') {
+                var datepicker = document.getElementById('todo-datepicker');
+                _todoList.push({id: _todoId, task: input.value, checked: false, deadline: calendar.value});
+                _todoId++;
+                input.value = '';
+                calendar.value = '';
+                datepicker.value = '';
+                _renderTasks();
+            } else {
+                alert('You must enter some value!');
+            }
+        }
 
-        var getTodos = function () {
-            return todoList;
-        };
+        function deleteTask(event) {
+            if (event.target.className === 'task__remove-icon') {
+                var element = event.target.parentNode;
+                var id = +element.getAttribute('id');
+                for (var i = 0; i < _todoList.length; i++) {
+                    if (_todoList[i].id === id) {
+                        _todoList.splice(i, 1);
+                    }
+                }
+                _renderTasks();
+            }
+        }
 
-        var editTodo = function (id) {
-            for (var i = 0; i < todoList.length; i++) {
-                if (todoList[i].id == id) {
-                    todoList[i].checked = !todoList[i].checked;
+        function checkTask(event) {
+            if (event.target.type === 'checkbox') {
+                var element = event.target.parentNode;
+                var id = +element.getAttribute('id');
+                for (var i = 0; i < _todoList.length; i++) {
+                    if (_todoList[i].id === id) {
+                        _todoList[i].checked = !_todoList[i].checked;
+                    }
                 }
             }
-        };
+            _renderTasks();
+        }
 
-        var removeTodo = function (id) {
-            for (var i = 0; i < todoList.length; i++) {
-                if (todoList[i].id == id) {
-                    todoList.splice(i, 1);
+        function _renderTasks() {
+            list.innerHTML = '';
+            _todoList.forEach(function (item) {
+                var date = item.deadline ? item.deadline.toLocaleDateString() : '';
+                var task = document.createElement('li');
+                task.className = 'task';
+                task.setAttribute('id', item.id);
+                task.innerHTML = '<div class="task__status"></div><div class="task__deadline">' + date + '</div><p class="task__text">' + item.task + '</p><input type="checkbox" class="task__checkbox"><div class="task__remove-icon">&#x2718</div>';
+                task.childNodes[2].checked = item.checked;
+                list.appendChild(task);
+                if (item.checked) {
+                    var doneTask = document.getElementById(item.id);
+                    doneTask.childNodes[0].innerHTML = '&#10004';
+                    doneTask.childNodes[1].className = "task__deadline task__deadline--checked";
+                    doneTask.childNodes[2].className = "task__text task__text--checked";
+                    doneTask.childNodes[3].checked = item.checked;
                 }
-            }
-        };
+            });
+        }
 
         return {
-            addTodo: addTodo,
-            getTodos: getTodos,
-            editTodo: editTodo,
-            removeTodo: removeTodo
-        };
+            addTask: addTask,
+            deleteTask: deleteTask,
+            checkTask: checkTask
+        }
     })();
 
-    var view = (function (store) {
-        var todos = store.getTodos();
-        var render = function () {
-            list.innerHTML = '';
-            input.value = '';
-            todos.forEach(function (item) {
-                var li = document.createElement('li');
-                var text = document.createElement('p');
-                var checkbox = document.createElement('input');
-                var removeDiv = document.createElement('div');
-                li.id = item.id;
-                li.className = 'task';
-                text.innerHTML = item.todo;
-                text.className = 'task__text';
-                checkbox.type = 'checkbox';
-                checkbox.className = 'task__checkbox';
-                checkbox.checked = item.checked;
-                removeDiv.innerHTML = '&#x2718';
-                removeDiv.className = 'task__remove-icon';
-                li.insertAdjacentElement('beforeend', text);
-                li.insertAdjacentElement('beforeend', checkbox);
-                li.insertAdjacentElement('beforeend', removeDiv);
-                list.appendChild(li);
-                if (item.checked) {
-                    var newLi = document.getElementById(item.id);
-                    newLi.childNodes[0].className = "task__text task__text--checked";
-                    newLi.childNodes[1].checked = item.checked;
-                }
-            })
-        };
-
-        var boxChecked = function (event) {
-            var element = event.target;
-            if (element.type === 'checkbox') {
-                store.editTodo(element.parentNode.id);
-                render();
+    document.addEventListener('keypress', function(key) {
+        if(key.which === 13) {
+            if(input.value !== '') {
+                todo.addTask()
             }
-        };
-
-        var deleteTask = function (event) {
-            var element = event.target;
-            if (element.className === 'task__remove-icon') {
-                store.removeTodo(element.parentElement.id);
-                render();
-            }
-        };
-
-        return {
-            render: render,
-            boxChecked: boxChecked,
-            deleteTask: deleteTask
-        };
-    })(store);
-
-    form.onsubmit = function () {
-        if (!input.value) {
-            alert('You must enter some value!');
-            return false;
-        } else {
-            store.addTodo(input.value);
-            view.render();
-            return false;
         }
-    };
-
-    list.addEventListener('click', view.deleteTask);
-    list.addEventListener('click', view.boxChecked);
-})();
+    });
+    input.addEventListener('keypress', function(key) {
+        if(key.which === 13) {
+            todo.addTask()
+        }
+    });
+    add.addEventListener('click', todo.addTask);
+    list.addEventListener('click', todo.deleteTask);
+    list.addEventListener('click', todo.checkTask);
+};
