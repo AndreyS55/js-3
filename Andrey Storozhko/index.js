@@ -2,6 +2,8 @@ window.onload = function() {
     var input = document.getElementById('todo-input');
     var add = document.getElementById('todo-add');
     var list = document.getElementById('todo-output');
+    var clearIcon = document.getElementById('todo-clear');
+
     var calendar =  datepicker('#todo-datepicker', {
         formatter: (input, date) => {
             input.value = date.toLocaleDateString();
@@ -14,17 +16,23 @@ window.onload = function() {
     });
 
     var todo = (function() {
-        var _todoList = [];
-        var _todoId = 1;
+        var _todoList;
+
+        if(!localStorage.myTasks) {
+            localStorage.myTasks = JSON.stringify({todos: [], id: 1});
+        }
+
+        _todoList = JSON.parse(localStorage.myTasks);
 
         function addTask() {
             if(input.value !== '') {
                 var datepicker = document.getElementById('todo-datepicker');
-                _todoList.push({id: _todoId, task: input.value, checked: false, deadline: calendar.value});
-                _todoId++;
+                _todoList.todos.push({id: _todoList.id, task: input.value, checked: false, deadline: datepicker.value});
+                _todoList.id++;
                 input.value = '';
                 calendar.value = '';
                 datepicker.value = '';
+                _updateStorage();
                 _renderTasks();
             } else {
                 alert('You must enter some value!');
@@ -35,11 +43,12 @@ window.onload = function() {
             if (event.target.className === 'task__remove-icon') {
                 var element = event.target.parentNode;
                 var id = +element.getAttribute('id');
-                for (var i = 0; i < _todoList.length; i++) {
-                    if (_todoList[i].id === id) {
-                        _todoList.splice(i, 1);
+                _todoList.todos.forEach(function(task, i) {
+                    if (task.id === id) {
+                        _todoList.todos.splice(i, 1);
                     }
-                }
+                });
+                _updateStorage();
                 _renderTasks();
             }
         }
@@ -48,19 +57,50 @@ window.onload = function() {
             if (event.target.type === 'checkbox') {
                 var element = event.target.parentNode;
                 var id = +element.getAttribute('id');
-                for (var i = 0; i < _todoList.length; i++) {
-                    if (_todoList[i].id === id) {
-                        _todoList[i].checked = !_todoList[i].checked;
+                _todoList.todos.forEach(function(task) {
+                    if (task.id === id) {
+                        task.checked = !task.checked;
                     }
-                }
+                });
             }
+            _updateStorage();
             _renderTasks();
         }
 
-        function _renderTasks() {
+        function loadTodoList() {
+            _renderTasks();
+        }
+        
+        function clearLocalStorage() {
             list.innerHTML = '';
-            _todoList.forEach(function (item) {
-                var date = item.deadline ? item.deadline.toLocaleDateString() : '';
+            localStorage.removeItem('myTasks');
+            localStorage.clear();
+        }
+
+        function _updateStorage() {
+            localStorage.myTasks = JSON.stringify(_todoList);
+        }
+
+        function _sortByDate() {
+            _todoList.todos.sort(function(firstDate, secondDate) {
+                return firstDate.deadline - secondDate.deadline;
+            });
+            _updateStorage();
+        }
+        
+        function _sortByCheck() {
+            _todoList.todos.sort(function(firstCheck, secondCheck) {
+                return firstCheck.checked - secondCheck.checked;
+            });
+            _updateStorage();
+        }
+
+        function _renderTasks() {
+            _sortByDate();
+            _sortByCheck();
+            list.innerHTML = '';
+            _todoList.todos.forEach(function (item) {
+                var date = item.deadline ? item.deadline : '';
                 var task = document.createElement('li');
                 task.className = 'task';
                 task.setAttribute('id', item.id);
@@ -80,7 +120,9 @@ window.onload = function() {
         return {
             addTask: addTask,
             deleteTask: deleteTask,
-            checkTask: checkTask
+            checkTask: checkTask,
+            loadTodoList: loadTodoList,
+            clearLocalStorage: clearLocalStorage
         }
     })();
 
@@ -99,4 +141,7 @@ window.onload = function() {
     add.addEventListener('click', todo.addTask);
     list.addEventListener('click', todo.deleteTask);
     list.addEventListener('click', todo.checkTask);
+    clearIcon.addEventListener('click', todo.clearLocalStorage);
+
+    todo.loadTodoList();
 };
