@@ -40,11 +40,12 @@ a {
 
 .todo__headline {
     font-size: 3rem;
+    color: rgb(0, 144, 255);
 }
 
 .wrapper {
     position: relative;
-    width: 80%;
+    width: 60%;
     margin: 1rem auto;
 }
 
@@ -54,7 +55,7 @@ a {
     padding: 0 200px 0 20px;
     font-size: 1.2rem;
     outline: none;
-    border: 1px solid #888888;
+    border: 1px solid lightblue;
     border-radius: 50px;
 }
 
@@ -93,17 +94,30 @@ a {
 
 .todo__list {
     margin-top: 1rem;
-    width: 80%;
+    width: 60%;
     display: flex;
-    flex-direction: column;
+    flex-flow: row wrap;
     font-size: 1.2rem;
 }
 
 .task {
-    padding: 5px 0;
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px 0;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
+    border: 1px solid lightblue;
+    border-radius: 5px;
+    background: white;
+}
+
+.task:hover {
+    box-shadow: 0 0 10px 3px rgba(173, 216, 230, 0.75);
+}
+
+.task--checked {
+    background: #8fffab;
 }
 
 .task__status {
@@ -148,6 +162,7 @@ a {
 .task__remove-icon {
     width: 20px;
     height: 20px;
+    margin-right: 10px;
     display: flex;
     justify-content: center;
     align-items: flex-end;
@@ -156,7 +171,7 @@ a {
     color: red;
 }
 
-.todo__clear-storage {
+.todo__clear-all {
     position: fixed;
     bottom: 50px;
     right: 50px;
